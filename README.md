@@ -11,17 +11,17 @@ A Chrome extension that adds an AI-powered reply generator button to Gmail's com
 ## Screenshots
 
 ### Extension in Action
-<img width="1391" height="287" alt="image" src="https://github.com/user-attachments/assets/617ae5cc-2911-4942-8bc2-b1702aa01a25" />
+<img width="1391" height="287" alt="image" src="https://github.com/user-attachments/assets/a20aa0dd-6a72-413a-a685-e350d2a5cee6" />
 
 *AI Reply button integrated next to Gmail's Send button*
 
 ### Generating Reply
-<img width="1398" height="308" alt="image" src="https://github.com/user-attachments/assets/dbc4559f-829c-4ec1-8b02-d03e2cd733e0" />
+<img width="1398" height="308" alt="image" src="https://github.com/user-attachments/assets/30ae993c-eb06-46bf-a56c-7a152b00c853" />
 
 *Loading state while generating the response*
 
 ### Generated Response
-<img width="1397" height="346" alt="image" src="https://github.com/user-attachments/assets/fea4490e-107f-4d3c-9730-d9c8c0a8bd31" />
+<img width="1397" height="346" alt="image" src="https://github.com/user-attachments/assets/30c625e5-44f2-4bc9-89f2-3c8f61088e3b" />
 
 *AI-generated professional reply inserted into compose box*
 
