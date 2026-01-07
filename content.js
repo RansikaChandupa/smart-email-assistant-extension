@@ -1,5 +1,6 @@
 console.log("Content script loaded.");
 
+const processedToolBars = new WeakSet();
 
 function getEmailContent(){
     const selectors = ['.h7', '.a3s.aiL', '.gmail_quote', '[role="presentation"]'];
@@ -15,17 +16,24 @@ function getEmailContent(){
 }
 
 
-function findComposeToolbar(){
-    const selectors = [ '.btC', '.aDh', '[role="dialog"]', '.gU.Up'];
+function findAllComposeToolbars(){
+    
+    const toolbars = [];
 
-    for (const selector of selectors) {
-        const toolbar = document.querySelector(selector);
-        if (toolbar) {
-            return toolbar;
+    const allToolbars = document.querySelectorAll('.btC');
+
+    allToolbars.forEach(toolbar => {
+        if(processedToolBars.has(toolbar) || toolbar.querySelector('.ai-reply-button')){
+            return;
         }
-        
-    }
-    return null;
+
+        const hasSendButton = toolbar.querySelector('.T-I.J-J5-Ji.aoO');
+        if(hasSendButton){
+            toolbars.push(toolbar);
+        }
+    });
+    console.log(toolbars);
+    return toolbars;
 }
 function createAIButton(){
     const button = document.createElement('div');
@@ -35,60 +43,68 @@ function createAIButton(){
     button.innerHTML = 'Generate Reply';
     button.setAttribute('role', 'button');
     button.setAttribute('data-tooltip', 'Generate AI Reply');
+    button.classList.add('ai-reply-button');
     return button;
 }
 
-const injectButton = function (){
-    const existingButton = document.querySelector('.ai-reply-button');
-    if(existingButton) existingButton.remove();
+const injectButtons = function (){
+   const toolbars = findAllComposeToolbars();
 
-    const toolbar = findComposeToolbar();
-    if(!toolbar){
-        console.log("Toolbar not found");
-        return;
-    }
+   if(toolbars.length === 0){
+    console.log("No toolbars found");
+    return;
+   }
 
-    console.log("Toolbar found, creating AI button");
+   console.log(`Found ${toolbars.length} new toolbars`);
 
-    const button = createAIButton();
-    button.classList.add('ai-reply-button');
+   for(const toolbar of toolbars){
+        const button = createAIButton();
 
-    button.addEventListener('click', async ()=> {
-        try {
-            button.innerHTML="Generating...";
-            button.disabeled = true;
-            const emailContent = getEmailContent();
-            const response = await fetch('http://localhost:8080/api/email/generate',{
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    emailContent: emailContent,
-                    tone: "Professional"
-                })
-            });
-            if(!response.ok){
-                throw new Error('API Request Failed');
+        button.addEventListener('click', async ()=>{
+            try{
+                button.innerHTML="Generating...";
+                button.disabled = true;
+                const emailContent = getEmailContent();
+
+                const response = await fetch('http://localhost:8080/api/email/generate',{
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        emailContent: emailContent,
+                        tone: "Professional"
+                    })
+                });
+                if(!response.ok){
+                    throw new Error('API Request Failed');
+                }
+
+                const generatedReply = await response.text();
+                const composeBox = document.querySelector('[role="textbox"][g_editable="true"]');
+                if(composeBox){
+                    composeBox.focus();
+                    document.execCommand('insertText', false, generatedReply);
+                }else{
+                    console.error('Compose box not found');
+                }
+
             }
-
-            const generatedReply = await response.text();
-            const composeBox = document.querySelector('[role="textbox"][g_editable="true"]');
-            if(composeBox){
-                composeBox.focus();
-                document.execCommand('insertText', false, generatedReply);
-            }else{
-                console.error('Compose box not found');
+            catch(error){
+                console.error(error);
+                alert('Failed to generate reply');
             }
-        } catch (error) {
-            console.error(error);
-            alert('Failed to generate reply');
-        }finally{
-            button.innerHTML = 'Generate Reply';
-            button.disabled=false;
-        }
-    })
-    toolbar.insertBefore(button, toolbar.firstChild);
+            finally{
+                button.innerHTML = 'Generate Reply';
+                button.disabled=false;
+            }
+        })
+        toolbar.insertBefore(button, toolbar.firstChild);
+        processedToolBars.add(toolbar);
+        console.log("AI button injected into toolbar");
+
+   }
+
 }
 
 const observer =  new MutationObserver((mutations) => {
@@ -98,7 +114,7 @@ const observer =  new MutationObserver((mutations) => {
 
         if(hasComposeElements){
             console.log("Compose Window Detetcted");
-            setTimeout(injectButton, 500);
+            setTimeout(injectButtons, 500);
         }
     }
 });
